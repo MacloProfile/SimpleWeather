@@ -1,6 +1,7 @@
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.net.URL;
@@ -18,14 +19,12 @@ public class CreatePageOfWeather {
 
     private String[] dates = new String[3];
     private ArrayList<String> degrees = new ArrayList<>();
-    private ArrayList<String> wind = new ArrayList<>(){{
-        add("-");
-        add("-");
-    }};
+    private ArrayList<String> tempFelt = new ArrayList<>();
+    private ArrayList<String> windDirection = new ArrayList<>();
 
     public void printWeather() throws IOException {
         writerNewPage();
-        printPageOfWeather(dates, degrees, wind);
+        printPageOfWeather(dates, degrees, tempFelt, windDirection);
     }
 
     //parsing a website page
@@ -44,41 +43,51 @@ public class CreatePageOfWeather {
         Document document = getPage();
         Element table = document.select("div[class=widget-body widget-columns-40]").first();
         assert table != null;
-        int index = 1;
         //date addition
+        Elements links = table.getElementsByTag("a");
         for (int i = 0; i < 3; i++) {
-            dates[i] = table.select("a[class=item item-day-" + (i + 3) + " link date-left]").first().text();
+            dates[i] = links.get(i).text();
         }
-        //temperature addition
+        //temperature addition and temperature feels like
+        int index = 1;
         while (index < 13) {
             degrees.add(table.select("span[class=unit unit_temperature_c]").get(index).text());
+            tempFelt.add(table.select("span[class=unit unit_temperature_c]").get(index+41).text());
             index++;
         }
-        //wind addition
-        index = 40;
-        while (index < 50) {
-            wind.add(table.select("span[class=wind-unit unit unit_wind_m_s]").get(index).text());
+        //wind direction addition
+        Elements wind = table.getElementsByClass("direction");
+        index = 0;
+        while (index < 12) {
+            windDirection.add(wind.get(index).text());
             index++;
         }
+
     }
 
     //print info about weather
-    private void printPageOfWeather(String[] dates, ArrayList<String> degrees, ArrayList<String> wind) {
+    private void printPageOfWeather(String[] dates, ArrayList<String> degrees, ArrayList<String> tempSecond,
+                                    ArrayList<String> wind) {
         int index = 0;
         for (String date : dates) {
             String title = String.format(patternForString,
                     date, "Night", "Morning", "Day", "Evening");
             String temperatureInfo = String.format(patternForString,
                     "Temperature", degrees.get(index), degrees.get(index+1), degrees.get(index+2), degrees.get(index+3));
-            String windInfo = String.format(patternForString,
-                    "Wind", wind.get(index), wind.get(index+1), wind.get(index+2), wind.get(index+3));
+            String tempSeconds = String.format(patternForString,
+                    "Feels like", tempSecond.get(index), tempSecond.get(index+1), tempSecond.get(index+2), tempSecond.get(index+3));
+            String windDirection = String.format(patternForString,
+                    "wind Direct.", wind.get(index), wind.get(index+1), wind.get(index+2), wind.get(index+3));
+
             System.out.println();
             System.out.println(spaceUp);
             System.out.println(title);
             System.out.println(spaceBetween);
             System.out.println(temperatureInfo);
-            System.out.println(windInfo);
+            System.out.println(tempSeconds);
+            System.out.println(windDirection);
             index += 4;
+
         }
     }
 
